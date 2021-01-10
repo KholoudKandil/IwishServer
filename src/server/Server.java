@@ -129,10 +129,10 @@ public class Server extends javax.swing.JFrame {
             
                 prodWishList.add(prod);
             }
-            System.out.println(prodWishList);
+            //System.out.println(prodWishList);
             usr.setWishList(prodWishList);
-            System.out.println(usr.getWishList());
-            System.out.println("I added products to my wish list");
+            //System.out.println(usr.getWishList());
+            //System.out.println("I added products to my wish list");
             
             //Select and set available products
             pst = con.prepareStatement("SELECT * FROM item", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
@@ -187,7 +187,7 @@ public class Server extends javax.swing.JFrame {
             while (rs.next()){
             //UserInfo user = new UserInfo();
             //user.setUsrName(rs.getString(1));
-            //System.out.println(rs.getString(1));
+            ////System.out.println(rs.getString(1));
 
             PendFriend.add(rs.getString(1));
 
@@ -227,7 +227,7 @@ public class Server extends javax.swing.JFrame {
             pst.setString(5, data.getFname());   pst.setString(6, data.getLname());
             pst.executeUpdate();
             con.commit();
-            System.out.println("Row inserted");
+            //System.out.println("Row inserted");
         } catch (SQLException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -265,23 +265,23 @@ public class Server extends javax.swing.JFrame {
         } catch (SQLException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
-        System.out.print(usr);
+        //System.out.print(usr);
         return usr;
     }
        static UserInfo rmFriend(UserInfo data){
         try {
-            System.out.println();
+            //System.out.println();
             pst = con.prepareStatement("DELETE FROM FRIEND WHERE USR_ID IN(SELECT ID FROM USR WHERE USR_NAME = ?) AND FRIEND_ID IN(SELECT ID FROM USR WHERE USR_NAME = ?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, data.getUsrName());
             pst.setString(2, data.getFriendName());
-            System.out.println(data.getUsrName());
+            //System.out.println(data.getUsrName());
             System.out.println(data.getFriendName());
-            System.out.println(pst);
+            //System.out.println(pst);
             
             pst.executeUpdate();
             con.commit();
-            System.out.println("Row deleted");
-            System.out.println(data.getAprvFriends());
+            //System.out.println("Row deleted");
+            //System.out.println(data.getAprvFriends());
    
         } catch (SQLException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
@@ -289,7 +289,39 @@ public class Server extends javax.swing.JFrame {
         data.setResult("success");
         return data;
        }
- 
+        static UserInfo friendRequest(UserInfo data){
+        try {
+            String usr_id = null, friend_id = null;
+            pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, data.getFriendName());
+            rs = pst.executeQuery();
+            if(rs.next()){
+            usr_id = rs.getString(1);
+            
+            
+            pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, data.getUsrName());
+            rs = pst.executeQuery();
+            if(rs.next())friend_id = rs.getString(1);
+            
+            pst = con.prepareStatement("insert into friend values (?,?,?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, usr_id);
+            pst.setString(2, friend_id);
+            pst.setString(3, "1");
+            rs = pst.executeQuery();
+            con.commit();
+            
+            
+            data.setResult("success");
+            }
+            
+        } catch (SQLException ex) {
+            data.setResult("fail");
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return data;
+        }
     
         public void addExcelItems(Vector<Vector<String>> items_xlsx) {
         try {
@@ -557,7 +589,7 @@ class ClientHandler extends Thread {
             ClientHandler.clientsVector.add(this);
             start();
             thid = this.getId();
-            System.out.println(this.getId());
+            //System.out.println(this.getId());
         } catch (SocketException ex) {
             //Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
         } 
@@ -579,7 +611,7 @@ class ClientHandler extends Thread {
                 
                 long clientId = this.getId();
                 String msgbk = new Gson().toJson(data);
-                System.out.println(msgbk);
+                //System.out.println(msgbk);
                 
                 sendMessageToClient(msgbk, clientId);
                 
@@ -603,7 +635,7 @@ class ClientHandler extends Thread {
         for (ClientHandler ch : clientsVector) {
             
             if(ch.thid == clientId ){
-            System.out.println(clientId);
+            //System.out.println(clientId);
             ch.ps.println(msg);
             }
         }
@@ -638,10 +670,12 @@ class ClientHandler extends Thread {
             case "fWish":
                 data = Server.fWishMsg(data);
             case "rmFriend":
-                System.out.println(data.getUsrName());
+                //System.out.println(data.getUsrName());
                 System.out.println(data.getFriendName());
-                System.out.println(msg);
+                //System.out.println(msg);
                 data = Server.rmFriend(data);
+            case "friendRequest":
+                data = Server.friendRequest(data);    
             default:
             // code block
             
