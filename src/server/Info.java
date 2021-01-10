@@ -2,28 +2,11 @@ package server;
 
 import java.util.Vector;
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/**
- *
- * @author Kandil
- */
-
 class ContrDetails{
-    private String friendName, prodName;
+    private String prodName;
     private int contrAmount;
 
-    public String getFriendName() {
-        return friendName;
-    }
-
-    public void setFriendName(String friendName) {
-        this.friendName = friendName;
-    }
+    
 
     public String getProdName() {
         return prodName;
@@ -49,7 +32,7 @@ class UserInfo {
     private Vector <ProdInfo> wishList; // itemms of user
     private ContrDetails contribution; // obj containing friendname, prodname, contribution amount
     private Vector <ProdInfo> availableProds;
-    
+    private String friendName;
     private Vector <String> pendFriends; // Pending friends of user
     private Vector <String> aprvFriends;
 
@@ -73,7 +56,13 @@ class UserInfo {
         
     }
     
-    
+    public String getFriendName() {
+        return friendName;
+    }
+
+    public void setFriendName(String friendName) {
+        this.friendName = friendName;
+    }
     public String getResult() {
         return result;
     }
