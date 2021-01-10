@@ -95,23 +95,93 @@ public class Server extends javax.swing.JFrame {
     }
     
 
-    static UserInfo logMsg(UserInfo data) {
+    static UserInfo logMsg(UserInfo usr) {
         try {
             pst = con.prepareStatement("SELECT * FROM usr where usr_name = ? and pw = ? ", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
-            pst.setString(1, data.getUsrName());
-            pst.setString(2, data.getPw());
+            pst.setString(1, usr.getUsrName());
+            pst.setString(2, usr.getPw());
             rs = pst.executeQuery();
+            
             if (rs.next()) {
-                data.setResult("success");
+                usr.setResult("success");
+            // set user details
+            usr.setUsrName(rs.getString(2));
+            //usr.setPw(rs.getString(3));
+            usr.setEmail(rs.getString(4));
+            usr.setFname(rs.getString(5));
+            usr.setLname(rs.getString(6));
+            String usr_id = rs.getString(1);
+            
+            // Select and set user's wishlist details
+            pst = con.prepareStatement("SELECT item.* FROM wishlist, item WHERE usr_id = ? and item.id = wishlist.item_id", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            //rs.next();
+            pst.setString(1, usr_id);
+            
+            rs = pst.executeQuery();
+            Vector <ProdInfo> prodList = new Vector();
+            while(rs.next()){
+            ProdInfo prod= new ProdInfo();
+                
+                prod.setName(rs.getString(2));
+                prod.setPrice(rs.getInt(3));
+                prod.setQty(rs.getInt(4));
+                prod.setDesc(rs.getString(5));
+            
+                prodList.add(prod);
+            }
+            usr.setWishList(prodList);
+            
+            //Select and set available products
+            pst = con.prepareStatement("SELECT * FROM item", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                       
+            rs = pst.executeQuery();
+            
+            while(rs.next()){
+            ProdInfo prod= new ProdInfo();
+                
+                prod.setName(rs.getString(2));
+                prod.setPrice(rs.getInt(3));
+                prod.setQty(rs.getInt(4));
+                prod.setDesc(rs.getString(5));
+            
+                prodList.add(prod);
+            }
+            usr.setAvailableProds(prodList);
+            
+            // Select and set user's friend list
+            pst = con.prepareStatement("SELECT usr_name FROM usr where usr.id in (Select friend_id from friend where usr_id = ? and friend_status = 0)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, usr_id);           
+            rs = pst.executeQuery();
+            Vector <String> friendList = new Vector();
+            while(rs.next()){
+
+                friendList.add(rs.getString(1));
+            }
+            usr.setAprvFriends(friendList);
+            
+            // Select and set friend requests
+            pst = con.prepareStatement("SELECT usr_name FROM usr where usr.id in (Select usr_id from friend where friend_id = ? and friend_status = 1)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, usr_id);           
+            rs = pst.executeQuery();
+            Vector <String> friendRequests = new Vector();
+            while(rs.next()){
+
+                friendRequests.add(rs.getString(1));
+            }
+            usr.setAprvFriends(friendRequests);
+            
+            // Add code to retrive notifications of completed gifts
+            
             }
             else {
-                data.setResult("fail");
+                usr.setResult("fail");
             }
+            
         } catch (SQLException ex) {
             Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        return data;
+        return usr;
     }
 
     static UserInfo regMsg(UserInfo data) {
