@@ -118,7 +118,7 @@ public class Server extends javax.swing.JFrame {
             pst.setString(1, usr_id);
             
             rs = pst.executeQuery();
-            Vector <ProdInfo> prodList = new Vector();
+            Vector <ProdInfo> prodWishList = new Vector();
             while(rs.next()){
             ProdInfo prod= new ProdInfo();
                 
@@ -127,15 +127,18 @@ public class Server extends javax.swing.JFrame {
                 prod.setQty(rs.getInt(4));
                 prod.setDesc(rs.getString(5));
             
-                prodList.add(prod);
+                prodWishList.add(prod);
             }
-            usr.setWishList(prodList);
+            System.out.println(prodWishList);
+            usr.setWishList(prodWishList);
+            System.out.println(usr.getWishList());
+            System.out.println("I added products to my wish list");
             
             //Select and set available products
             pst = con.prepareStatement("SELECT * FROM item", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
                        
             rs = pst.executeQuery();
-            
+            Vector <ProdInfo> prodAvailableList = new Vector();
             while(rs.next()){
             ProdInfo prod= new ProdInfo();
                 
@@ -144,9 +147,9 @@ public class Server extends javax.swing.JFrame {
                 prod.setQty(rs.getInt(4));
                 prod.setDesc(rs.getString(5));
             
-                prodList.add(prod);
+                prodAvailableList.add(prod);
             }
-            usr.setAvailableProds(prodList);
+            usr.setAvailableProds(prodAvailableList);
             
             // Select and set user's friend list
             pst = con.prepareStatement("SELECT usr_name FROM usr where usr.id in (Select friend_id from friend where usr_id = ? and friend_status = 0)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
@@ -160,7 +163,7 @@ public class Server extends javax.swing.JFrame {
             usr.setAprvFriends(friendList);
             
             // Select and set friend requests
-            pst = con.prepareStatement("SELECT usr_name FROM usr where usr.id in (Select usr_id from friend where friend_id = ? and friend_status = 1)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            /*pst = con.prepareStatement("SELECT usr_name FROM usr where usr.id in (Select usr_id from friend where friend_id = ? and friend_status = 1)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, usr_id);           
             rs = pst.executeQuery();
             Vector <String> friendRequests = new Vector();
@@ -168,8 +171,29 @@ public class Server extends javax.swing.JFrame {
 
                 friendRequests.add(rs.getString(1));
             }
-            usr.setAprvFriends(friendRequests);
-            
+            usr.setPendFriends(friendRequests);*/
+            //////////////////////////////////////////////////////////////
+            pst = con.prepareStatement("SELECT US.USR_NAME\n"
+            + "FROM USR US \n"
+            + "WHERE US.ID IN\n"
+            + "(SELECT FRIEND_ID\n"
+            + "FROM FRIEND F, USR US\n"
+            + "WHERE F.USR_ID =US.ID and F.FRIEND_STATUS =1 AND US.USR_NAME = ? )\n"
+            + "", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, usr.getUsrName());
+            rs = pst.executeQuery();
+            Vector<String> PendFriend = new Vector();
+           
+            while (rs.next()){
+            //UserInfo user = new UserInfo();
+            //user.setUsrName(rs.getString(1));
+            //System.out.println(rs.getString(1));
+
+            PendFriend.add(rs.getString(1));
+
+            }
+            usr.setPendFriends(PendFriend);
+
             // Add code to retrive notifications of completed gifts
             
             }
@@ -244,6 +268,27 @@ public class Server extends javax.swing.JFrame {
         System.out.print(usr);
         return usr;
     }
+       static UserInfo rmFriend(UserInfo data){
+        try {
+            System.out.println();
+            pst = con.prepareStatement("DELETE FROM FRIEND WHERE USR_ID IN(SELECT ID FROM USR WHERE USR_NAME = ?) AND FRIEND_ID IN(SELECT ID FROM USR WHERE USR_NAME = ?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, data.getUsrName());
+            pst.setString(2, data.getFriendName());
+            System.out.println(data.getUsrName());
+            System.out.println(data.getFriendName());
+            System.out.println(pst);
+            
+            pst.executeUpdate();
+            con.commit();
+            System.out.println("Row deleted");
+            System.out.println(data.getAprvFriends());
+   
+        } catch (SQLException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        data.setResult("success");
+        return data;
+       }
  
     
         public void addExcelItems(Vector<Vector<String>> items_xlsx) {
@@ -582,6 +627,7 @@ class ClientHandler extends Thread {
     UserInfo handleMsg(String msg) {
 
         UserInfo data = new Gson().fromJson(msg, UserInfo.class);
+        
         switch (data.getType()) {
             case "log":
                 data = Server.logMsg(data);
@@ -591,7 +637,11 @@ class ClientHandler extends Thread {
                 break;
             case "fWish":
                 data = Server.fWishMsg(data);
-                
+            case "rmFriend":
+                System.out.println(data.getUsrName());
+                System.out.println(data.getFriendName());
+                System.out.println(msg);
+                data = Server.rmFriend(data);
             default:
             // code block
             
