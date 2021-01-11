@@ -674,8 +674,10 @@ class ClientHandler extends Thread {
                 System.out.println(data.getFriendName());
                 //System.out.println(msg);
                 data = Server.rmFriend(data);
+                break;
             case "friendRequest":
-                data = Server.friendRequest(data);    
+                data = Server.friendRequest(data); 
+                break;
             default:
             // code block
             
