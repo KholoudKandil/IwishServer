@@ -70,6 +70,7 @@ public class Server extends javax.swing.JFrame {
                             s = serverSocket.accept();
                             new ClientHandler(s);
                         } catch (SocketException ex) {
+                            th.stop();
                             //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                         } catch (IOException ex) {
                             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
@@ -194,7 +195,26 @@ public class Server extends javax.swing.JFrame {
             }
             usr.setPendFriends(PendFriend);
 
-            // Add code to retrive notifications of completed gifts
+            // retrive notifications of completed gifts // fill completed list 
+            pst = con.prepareStatement("select * from item where id in(select item_id from wishlist where usr_id = ? and completed = 1)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, usr_id);           
+            rs = pst.executeQuery();
+            Vector <ProdInfo> completedProds = new Vector();
+            
+
+                while(rs.next()){
+            ProdInfo prod= new ProdInfo();
+                
+                prod.setName(rs.getString(2));
+                prod.setPrice(rs.getInt(3));
+                prod.setQty(rs.getInt(4));
+                prod.setDesc(rs.getString(5));
+            
+                completedProds.add(prod);
+            }
+            
+            usr.setCompletedProds(completedProds);
+            
             
             }
             else {
@@ -229,7 +249,9 @@ public class Server extends javax.swing.JFrame {
             con.commit();
             //System.out.println("Row inserted");
         } catch (SQLException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            data.setResult("fail");
+            return data;
+            //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
         //data.reptype = "repreg";
         data.setResult("success");
@@ -275,7 +297,7 @@ public class Server extends javax.swing.JFrame {
             pst.setString(1, data.getUsrName());
             pst.setString(2, data.getFriendName());
             //System.out.println(data.getUsrName());
-            System.out.println(data.getFriendName());
+            //System.out.println(data.getFriendName());
             //System.out.println(pst);
             
             pst.executeUpdate();
@@ -322,6 +344,62 @@ public class Server extends javax.swing.JFrame {
         
         return data;
         }
+        static UserInfo FDialogfriendRequest(UserInfo data){
+           try {
+              
+            String usr_id = null, friend_id = null;
+               if(data.getFlagFriendReq()==true)
+               {
+                   
+                   pst = con.prepareStatement("update friend set FRIEND_STATUS=0\n" +
+                                               "WHERE FRIEND_ID=(\n" +
+                                                    "SELECT FRIEND_ID\n" +
+                                                     "FROM(\n" +
+                                                            "SELECT US.USR_NAME as FRIEND_NAME ,US.ID AS FRIEND_ID\n" +
+                                                            "FROM USR US \n" +
+                                                            "WHERE US.ID IN\n" +
+                                                                  "(SELECT FRIEND_ID\n" +
+                                                                  "FROM FRIEND F, USR US\n" +
+                                                                  "WHERE F.USR_ID =US.ID and F.FRIEND_STATUS =1 AND US.USR_NAME =?))\n" +
+                                                                  "WHERE FRIEND_NAME=?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                  
+                   pst.setString(1, data.getUsrName());
+                    pst.setString(2, data.getFriendName());
+                     pst.executeUpdate();
+               }
+               else if(data.getFlagFriendReq()==false)
+               {
+                   pst = con.prepareStatement("DELETE FROM friend \n" +
+                                               "WHERE USR_ID= (select ID from usr where USR_NAME =?)\n" +
+                                                     "and  FRIEND_ID=(\n" +
+                                                                            "SELECT FRIEND_ID\n" +
+                                                                            "FROM(\n" +
+                                                                                    "SELECT US.USR_NAME as FRIEND_NAME ,US.ID AS FRIEND_ID\n" +
+                                                                                    "FROM USR US \n" +
+                                                                                    "WHERE US.ID IN\n" +
+                                                                                                     "(SELECT FRIEND_ID\n" +
+                                                                                                     "FROM FRIEND F, USR US\n" +
+                                                                                                     "WHERE F.USR_ID =US.ID and F.FRIEND_STATUS =1 AND US.USR_NAME =?))\n" +
+                                                                            "WHERE FRIEND_NAME=?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                   pst.setString(1, data.getUsrName());
+                  pst.setString(2, data.getUsrName());
+                    pst.setString(3, data.getFriendName());
+                     pst.executeUpdate();  
+               }
+            
+            con.commit();
+            
+            
+            data.setResult("success");
+            
+            
+        } catch (SQLException ex) {
+            data.setResult("fail");
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return data;
+       }
     
         public void addExcelItems(Vector<Vector<String>> items_xlsx) {
         try {
@@ -669,13 +747,19 @@ class ClientHandler extends Thread {
                 break;
             case "fWish":
                 data = Server.fWishMsg(data);
+                break;
             case "rmFriend":
                 //System.out.println(data.getUsrName());
                 System.out.println(data.getFriendName());
                 //System.out.println(msg);
                 data = Server.rmFriend(data);
+                break;
             case "friendRequest":
-                data = Server.friendRequest(data);    
+                data = Server.friendRequest(data); 
+                break;
+            case "FDialogfriendRequest":
+                data = Server.FDialogfriendRequest(data); 
+                break;
             default:
             // code block
             
