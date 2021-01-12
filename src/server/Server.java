@@ -1,6 +1,5 @@
 package server;
 
-// Yarb ykon uploaded sa7
 
 import com.google.gson.Gson;
 import java.io.DataInputStream;
@@ -73,14 +72,14 @@ public class Server extends javax.swing.JFrame {
                             th.stop();
                             //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                         } catch (IOException ex) {
-                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                            //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
                 }
             });
             th.start();
         } catch (IOException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -89,9 +88,10 @@ public class Server extends javax.swing.JFrame {
         try {
             DriverManager.registerDriver(new OracleDriver());
             con = DriverManager.getConnection("jdbc:oracle:thin:@127.0.0.1:1521:xe", "java", "java");
-            con.setAutoCommit(false);         
+            con.setAutoCommit(false);  
+            pst = con.prepareStatement("SELECT id FROM usr WHERE ROWNUM = 1 ORDER BY id DESC", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            //ex.printStackTrace();
         }
     }
     
