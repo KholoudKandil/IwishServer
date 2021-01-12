@@ -13,11 +13,28 @@ import java.util.Vector;
  * @author Kandil
  */
 
+
 class ContrDetails{
     private String prodName;
     private int contrAmount;
     private int actualAmount;
+    private String friendName;
 
+    public int getActualAmount() {
+        return actualAmount;
+    }
+
+    public void setActualAmount(int actualAmount) {
+        this.actualAmount = actualAmount;
+    }
+
+    public String getFriendName() {
+        return friendName;
+    }
+
+    public void setFriendName(String friendName) {
+        this.friendName = friendName;
+    }
     
 
     public String getProdName() {
@@ -48,7 +65,7 @@ class UserInfo {
     private String friendName; // The name of the friend that user wants to add or remove
     private Vector <String> pendFriends; // Pending friends of user
     private Vector <String> aprvFriends; //  a vector of user's friends
-    private float credit; // user's credit or wallet
+    private int credit; // user's credit or wallet
     
     private boolean FlagFriendReq;
     
@@ -203,11 +220,11 @@ class UserInfo {
         this.completedProds = completedProds;
     }
 
-    public float getCredit() {
+    public int getCredit() {
         return credit;
     }
 
-    public void setCredit(float credit) {
+    public void setCredit(int credit) {
         this.credit = credit;
     }
 }

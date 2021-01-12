@@ -200,9 +200,7 @@ public class Server extends javax.swing.JFrame {
             pst.setString(1, usr_id);           
             rs = pst.executeQuery();
             Vector <ProdInfo> completedProds = new Vector();
-            
-
-                while(rs.next()){
+            while(rs.next()){
             ProdInfo prod= new ProdInfo();
                 
                 prod.setName(rs.getString(2));
@@ -215,8 +213,18 @@ public class Server extends javax.swing.JFrame {
             
             usr.setCompletedProds(completedProds);
             
-            
+            pst = con.prepareStatement("SELECT CREDIT FROM usr where usr.id  = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                pst.setString(1, usr_id);
+                rs = pst.executeQuery();
+                //UserInfo contribute = new UserInfo();
+                while (rs.next()) {
+
+                    // contribute.setCredit(rs.getInt(1));
+                    usr.setCredit(rs.getInt(1));
+
+                }
             }
+            
             else {
                 usr.setResult("fail");
             }
@@ -400,6 +408,62 @@ public class Server extends javax.swing.JFrame {
         
         return data;
        }
+        static UserInfo contribute(UserInfo data) {
+        try {
+            System.out.println(data.getContribution().getContrAmount());
+            String usr_id = null, friend_id = null, item_id = null;
+            
+            pst = con.prepareStatement("SELECT id FROM payment WHERE ROWNUM = 1 ORDER BY id DESC", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            rs = pst.executeQuery();
+            String id = "1";
+            if (rs.next()) {
+                int temp = rs.getInt("id");
+                temp++;
+                id = String.valueOf(temp);
+            }
+            
+            
+            
+            pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, data.getUsrName());
+            System.out.println(data.getUsrName());
+            rs = pst.executeQuery();
+            if (rs.next()) {
+                usr_id = rs.getString(1);
+            }
+                pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                pst.setString(1, data.getContribution().getFriendName());
+                rs = pst.executeQuery();
+                if (rs.next()) {
+                    friend_id = rs.getString(1);
+                }
+                pst = con.prepareStatement("select id from ITEM where name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                pst.setString(1, data.getContribution().getProdName());
+                rs = pst.executeQuery();
+                if (rs.next()) {
+                    item_id = rs.getString(1);
+                }
+                pst = con.prepareStatement("insert into PAYMENT (ID,USR_ID,FRIEND_ID,ITEM_ID,PAID) VALUES (?,?,?,?,?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                pst.setString(1, id);
+                pst.setString(2, usr_id);
+                pst.setString(3, friend_id);
+                pst.setString(4, item_id);
+                pst.setString(5, String.valueOf(data.getContribution().getContrAmount()));
+                rs = pst.executeQuery();
+                con.commit();
+                System.out.println("committttt");
+
+                data.setResult("success");
+        
+            
+
+        } catch (SQLException ex) {
+            data.setResult("fail");
+
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return data;
+    }
     
         public void addExcelItems(Vector<Vector<String>> items_xlsx) {
         try {
@@ -759,6 +823,10 @@ class ClientHandler extends Thread {
                 break;
             case "FDialogfriendRequest":
                 data = Server.FDialogfriendRequest(data); 
+                break;
+            case "contribute":
+                data = Server.contribute(data);
+
                 break;
             default:
             // code block
