@@ -114,7 +114,11 @@ public class Server extends javax.swing.JFrame {
             String usr_id = rs.getString(1);
             
             // Select and set user's wishlist details
-            pst = con.prepareStatement("SELECT item.* FROM wishlist, item WHERE usr_id = ? and item.id = wishlist.item_id", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst = con.prepareStatement("select item.* , w.total_paid \n" +
+                                    "from item, wishlist w\n" +
+                                    "where item.id = w.item_id\n" +
+                                    "    and w.usr_id = ?\n" +
+                                    "    and completed = 1", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             //rs.next();
             pst.setString(1, usr_id);
             
@@ -127,7 +131,7 @@ public class Server extends javax.swing.JFrame {
                 prod.setPrice(rs.getInt(3));
                 prod.setQty(rs.getInt(4));
                 prod.setDesc(rs.getString(5));
-            
+                prod.setPaid(rs.getInt(7));
                 prodWishList.add(prod);
             }
             //System.out.println(prodWishList);
@@ -186,16 +190,14 @@ public class Server extends javax.swing.JFrame {
             Vector<String> PendFriend = new Vector();
            
             while (rs.next()){
-            //UserInfo user = new UserInfo();
-            //user.setUsrName(rs.getString(1));
-            ////System.out.println(rs.getString(1));
+            
 
             PendFriend.add(rs.getString(1));
 
             }
             usr.setPendFriends(PendFriend);
 
-            // retrive notifications of completed gifts // fill completed list 
+            // retrive notifications of completed gifts you wished for // fill completed list 
             pst = con.prepareStatement("select * from item where id in(select item_id from wishlist where usr_id = ? and completed = 1)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, usr_id);           
             rs = pst.executeQuery();
@@ -207,12 +209,30 @@ public class Server extends javax.swing.JFrame {
                 prod.setPrice(rs.getInt(3));
                 prod.setQty(rs.getInt(4));
                 prod.setDesc(rs.getString(5));
+                
             
                 completedProds.add(prod);
             }
-            
+            // retrive notifications of completed gifts you contributed in // fill completed contributions list
+            Vector completedContrbutions = new Vector();
+            pst = con.prepareStatement("select usr.usr_name as friend_name , item.name as product_name\n" +
+                                        "from wishlist w, payment p, usr, item\n" +
+                                        "where w.usr_id = p.friend_id \n" +
+                                        "    and w.item_id = P.ITEM_ID \n" +
+                                        "    and completed = 1 \n" +
+                                        "    and p.usr_id =? \n" +
+                                        "    and usr.id = p.friend_id\n" +
+                                        "    and item.id = w.item_id", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, usr_id);           
+            rs = pst.executeQuery();
+            while(rs.next()){
+            usr.setFriendName(rs.getString(1));
+            completedContrbutions.add(rs.getString(2));
+            }
             usr.setCompletedProds(completedProds);
+            usr.setCompletedContributions(completedContrbutions);
             
+            // Retriving user credit 
             pst = con.prepareStatement("SELECT CREDIT FROM usr where usr.id  = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
                 pst.setString(1, usr_id);
                 rs = pst.executeQuery();
@@ -223,6 +243,7 @@ public class Server extends javax.swing.JFrame {
                     usr.setCredit(rs.getInt(1));
 
                 }
+            
             }
             
             else {
@@ -249,7 +270,7 @@ public class Server extends javax.swing.JFrame {
                 id = String.valueOf(temp);
             }
             // insert
-            pst = con.prepareStatement("INSERT INTO usr VALUES ( ? , ? , ? , ? , ? , ? )", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst = con.prepareStatement("INSERT INTO usr VALUES ( ? , ? , ? , ? , ? , ?,0 )", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, id);   pst.setString(2, data.getUsrName());
             pst.setString(3, data.getPw());   pst.setString(4, data.getEmail());
             pst.setString(5, data.getFname());   pst.setString(6, data.getLname());
@@ -258,8 +279,9 @@ public class Server extends javax.swing.JFrame {
             //System.out.println("Row inserted");
         } catch (SQLException ex) {
             data.setResult("fail");
-            return data;
-            //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            
         }
         //data.reptype = "repreg";
         data.setResult("success");
@@ -275,7 +297,7 @@ public class Server extends javax.swing.JFrame {
             pst.setString(1, usrName);
             rs = pst.executeQuery();
             
-            pst = con.prepareStatement("SELECT item.* FROM wishlist, item WHERE usr_id = ? and item.id = wishlist.item_id", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst = con.prepareStatement("SELECT item.* FROM wishlist, item WHERE usr_id = ? and item.id = wishlist.item_id and completed = 0", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             rs.next();
             pst.setString(1, rs.getString(1));
             
@@ -301,9 +323,24 @@ public class Server extends javax.swing.JFrame {
        static UserInfo rmFriend(UserInfo data){
         try {
             //System.out.println();
-            pst = con.prepareStatement("DELETE FROM FRIEND WHERE USR_ID IN(SELECT ID FROM USR WHERE USR_NAME = ?) AND FRIEND_ID IN(SELECT ID FROM USR WHERE USR_NAME = ?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            String usr_id = null, friend_id = null;
+            pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, data.getFriendName());
+            rs = pst.executeQuery();
+            if(rs.next())
+            usr_id = rs.getString(1);
+            
+            pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, data.getUsrName());
-            pst.setString(2, data.getFriendName());
+            rs = pst.executeQuery();
+            if(rs.next())friend_id = rs.getString(1);
+            
+            pst = con.prepareStatement("DELETE FROM FRIEND \n" +
+                                        "WHERE USR_ID in (1,2) AND FRIEND_ID in (1,2)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, usr_id);
+            pst.setString(2, friend_id);
+            pst.setString(3, usr_id);
+            pst.setString(4, friend_id);
             //System.out.println(data.getUsrName());
             //System.out.println(data.getFriendName());
             //System.out.println(pst);
@@ -312,12 +349,12 @@ public class Server extends javax.swing.JFrame {
             con.commit();
             //System.out.println("Row deleted");
             //System.out.println(data.getAprvFriends());
-   
+            
         } catch (SQLException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
         data.setResult("success");
-        return data;
+            return data;
        }
         static UserInfo friendRequest(UserInfo data){
         try {
@@ -332,7 +369,7 @@ public class Server extends javax.swing.JFrame {
             pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, data.getUsrName());
             rs = pst.executeQuery();
-            if(rs.next())friend_id = rs.getString(1);
+            if(rs.next()){friend_id = rs.getString(1);
             
             pst = con.prepareStatement("insert into friend values (?,?,?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, usr_id);
@@ -343,6 +380,7 @@ public class Server extends javax.swing.JFrame {
             
             
             data.setResult("success");
+            }
             }
             
         } catch (SQLException ex) {
@@ -464,7 +502,76 @@ public class Server extends javax.swing.JFrame {
         }
         return data;
     }
-    
+        static UserInfo FunAvailableItem(UserInfo data){
+          
+          try {
+            String usr_id = null, AddNewItem = null;
+            pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, data.getUsrName());
+            rs = pst.executeQuery();
+            if(rs.next()){
+            usr_id = rs.getString(1);
+            
+            
+            pst = con.prepareStatement("SELECT ID FROM ITEM WHERE NAME= ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, data.getAddNewItem());
+            rs = pst.executeQuery();
+            if(rs.next())AddNewItem = rs.getString(1);
+            
+            pst = con.prepareStatement("insert into WISHLIST values (?,?,?,?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, usr_id);
+            pst.setString(2, AddNewItem);
+            pst.setString(3, "0");
+            pst.setString(4, "0");
+            rs = pst.executeQuery();
+            con.commit();
+            
+            
+            data.setResult("success");
+            }
+            
+        } catch (SQLException ex) {
+            data.setResult("fail");
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return data;
+      }
+        
+    static UserInfo FunRemoveItem(UserInfo data){
+           System.out.println("enter in FunRemoveItem");
+           try {
+            String usr_id = null, removeItem = null;
+            pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, data.getUsrName());
+            rs = pst.executeQuery();
+            if(rs.next()){
+            usr_id = rs.getString(1);
+                System.out.println("user id =  " + usr_id);
+            
+            pst = con.prepareStatement("SELECT ID FROM ITEM WHERE NAME= ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, data.getRemoveItem());
+            rs = pst.executeQuery();
+            if(rs.next())removeItem = rs.getString(1);
+            System.out.println("item id =  " + removeItem);
+            
+            pst = con.prepareStatement("DELETE FROM WISHLIST WHERE USR_ID=? AND ITEM_ID=?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, usr_id);
+            pst.setString(2, removeItem);
+             pst.executeUpdate();
+            con.commit();
+            
+            
+            data.setResult("success");
+            }
+            
+        } catch (SQLException ex) {
+            data.setResult("fail");
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return data;
+       }
         public void addExcelItems(Vector<Vector<String>> items_xlsx) {
         try {
             // get next id
@@ -826,7 +933,12 @@ class ClientHandler extends Thread {
                 break;
             case "contribute":
                 data = Server.contribute(data);
-
+                break;
+            case "typeAvailableItem":
+                data = Server.FunAvailableItem(data);
+                break;
+            case "typeRemoveItem":
+               data = Server.FunRemoveItem(data);
                 break;
             default:
             // code block
