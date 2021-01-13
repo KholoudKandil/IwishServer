@@ -491,6 +491,30 @@ public class Server extends javax.swing.JFrame {
                 rs = pst.executeQuery();
                 con.commit();
                 System.out.println("committttt");
+                
+                pst = con.prepareStatement("select PAID from payment where id = ? ", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+               pst.setString(1, id);
+//                pst.setString(3, friend_id);
+//                pst.setString(2, item_id);
+                rs = pst.executeQuery();
+              ContrDetails actualamount =  new ContrDetails();
+                if (rs.next()) {
+                    
+                     actualamount.setActualAmount(rs.getInt(1));
+                     data.setContribution(actualamount);
+                }
+                
+               
+                pst = con.prepareStatement("select credit from usr where id = ? ", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+               pst.setString(1, usr_id);
+                 
+                rs = pst.executeQuery();
+              
+                if (rs.next()) {
+                    
+                    
+                     data.setCredit(rs.getInt(1));
+                }
 
                 data.setResult("success");
         
