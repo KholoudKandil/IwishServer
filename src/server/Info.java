@@ -66,7 +66,8 @@ class UserInfo {
     private Vector <String> aprvFriends; //  a vector of user's friends
     private Vector <String> completedContributions;
     private int credit; // user's credit or wallet
-    private String addNewItem;
+    private ProdInfo newProd;
+    //private String addNewItem;
     private String RemoveItem;
 
     
@@ -76,7 +77,8 @@ class UserInfo {
     public UserInfo() {
     }
 
-    public UserInfo copy(UserInfo myInfo) {
+    public UserInfo copy() {
+        UserInfo myInfo = new UserInfo();
         myInfo.setType(this.getType());
         
         myInfo.setUsrName(this.getUsrName());
@@ -93,8 +95,9 @@ class UserInfo {
         myInfo.setFriendName(this.getFriendName());
         myInfo.setCredit(this.getCredit());
         myInfo.setFlagFriendReq(this.getFlagFriendReq());
-        myInfo.setAddNewItem(this.getAddNewItem());
+        //myInfo.setAddNewItem(this.getAddNewItem());
         myInfo.setRemoveItem(this.getRemoveItem());
+        myInfo.setNewProd(this.getNewProd());
         
         return myInfo;
     }
@@ -232,7 +235,7 @@ class UserInfo {
     public void setCredit(int credit) {
         this.credit = credit;
     }
-
+/*
     public String getAddNewItem() {
         return addNewItem;
     }
@@ -240,7 +243,7 @@ class UserInfo {
     public void setAddNewItem(String addNewItem) {
         this.addNewItem = addNewItem;
     }
-
+*/
     public String getRemoveItem() {
         return RemoveItem;
     }
@@ -255,6 +258,14 @@ class UserInfo {
 
     public void setCompletedContributions(Vector <String> completedContributions) {
         this.completedContributions = completedContributions;
+    }
+
+    public ProdInfo getNewProd() {
+        return newProd;
+    }
+
+    public void setNewProd(ProdInfo newProd) {
+        this.newProd = newProd;
     }
 }
 
