@@ -117,8 +117,7 @@ public class Server extends javax.swing.JFrame {
             pst = con.prepareStatement("select item.* , w.total_paid \n" +
                                     "from item, wishlist w\n" +
                                     "where item.id = w.item_id\n" +
-                                    "    and w.usr_id = ?\n" +
-                                    "    and completed = 1", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                                    "    and w.usr_id = ?\n" , ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             //rs.next();
             pst.setString(1, usr_id);
             
@@ -157,8 +156,9 @@ public class Server extends javax.swing.JFrame {
             usr.setAvailableProds(prodAvailableList);
             
             // Select and set user's friend list
-            pst = con.prepareStatement("SELECT usr_name FROM usr where usr.id in (Select friend_id from friend where usr_id = ? and friend_status = 0)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
-            pst.setString(1, usr_id);           
+            pst = con.prepareStatement("SELECT usr_name FROM usr where usr.id in (Select friend_id from friend where usr_id = ? and friend_status = 0) or usr.id in (Select usr_id from friend where friend_id = ? and friend_status = 0)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            pst.setString(1, usr_id);
+            pst.setString(2, usr_id); 
             rs = pst.executeQuery();
             Vector <String> friendList = new Vector();
             while(rs.next()){
@@ -363,13 +363,13 @@ public class Server extends javax.swing.JFrame {
             pst.setString(1, data.getFriendName());
             rs = pst.executeQuery();
             if(rs.next()){
-            usr_id = rs.getString(1);
+            usr_id = rs.getString(1);}
             
             
             pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, data.getUsrName());
             rs = pst.executeQuery();
-            if(rs.next()){friend_id = rs.getString(1);
+            if(rs.next()){friend_id = rs.getString(1);}
             
             pst = con.prepareStatement("insert into friend values (?,?,?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, usr_id);
@@ -380,12 +380,12 @@ public class Server extends javax.swing.JFrame {
             
             
             data.setResult("success");
-            }
-            }
+            
             
         } catch (SQLException ex) {
-            data.setResult("fail");
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            data.setResult(Integer.toString(ex.getErrorCode()));
+            System.out.println("Error code: "+ex.getErrorCode());
+            //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         return data;
@@ -441,7 +441,8 @@ public class Server extends javax.swing.JFrame {
             
         } catch (SQLException ex) {
             data.setResult("fail");
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            
         }
         
         return data;
@@ -514,7 +515,7 @@ public class Server extends javax.swing.JFrame {
             
             
             pst = con.prepareStatement("SELECT ID FROM ITEM WHERE NAME= ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
-            pst.setString(1, data.getAddNewItem());
+            pst.setString(1, data.getNewProd().getName());
             rs = pst.executeQuery();
             if(rs.next())AddNewItem = rs.getString(1);
             
@@ -527,12 +528,13 @@ public class Server extends javax.swing.JFrame {
             con.commit();
             
             
+            
             data.setResult("success");
             }
             
         } catch (SQLException ex) {
             data.setResult("fail");
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         return data;
