@@ -13,7 +13,6 @@ import java.util.Vector;
  * @author Kandil
  */
 
-
 class ContrDetails{
     private String prodName;
     private int contrAmount;
@@ -65,7 +64,11 @@ class UserInfo {
     private String friendName; // The name of the friend that user wants to add or remove
     private Vector <String> pendFriends; // Pending friends of user
     private Vector <String> aprvFriends; //  a vector of user's friends
+    private Vector <String> completedContributions;
     private int credit; // user's credit or wallet
+    private String addNewItem;
+    private String RemoveItem;
+
     
     private boolean FlagFriendReq;
     
@@ -73,27 +76,29 @@ class UserInfo {
     public UserInfo() {
     }
 
-    public UserInfo(UserInfo usrInfo) {
-        this.type = usrInfo.getType();
-        this.reptype = usrInfo.getReptype();
-        this.result = usrInfo.getResult();
-        this.usrName = usrInfo.getUsrName();
-        this.pw = usrInfo.getPw();
-        this.email = usrInfo.getEmail();
-        this.fname = usrInfo.getFname();
-        this.lname = usrInfo.getLname();
-        this.wishList = new Vector(usrInfo.getWishList());
-        this.contribution = usrInfo.getContribution();
-        this.availableProds = new Vector(usrInfo.getAvailableProds());
-        this.pendFriends = new Vector(usrInfo.getPendFriends());
-        this.aprvFriends = new Vector(usrInfo.getAprvFriends());
-        this.completedProds = new Vector(usrInfo.getCompletedProds());
-        this.usrName = usrInfo.getFriendName();
-        this.credit = usrInfo.getCredit();
+    public UserInfo copy(UserInfo myInfo) {
+        myInfo.setType(this.getType());
         
-        this.FlagFriendReq=usrInfo.getFlagFriendReq();
+        myInfo.setUsrName(this.getUsrName());
+        myInfo.setFname(this.getFname());
+        myInfo.setLname(this.getLname());
+        myInfo.setEmail(this.getEmail());
+        myInfo.setWishList(new Vector(this.getWishList()));
+        myInfo.setAvailableProds(new Vector(this.getAvailableProds()));
+        myInfo.setPendFriends(new Vector(this.getPendFriends()));
+        myInfo.setContribution(this.getContribution());
+        myInfo.setAprvFriends(new Vector(this.getAprvFriends()));
+        myInfo.setCompletedProds(new Vector(this.getCompletedProds()));
+        myInfo.setCompletedContributions(new Vector(this.getCompletedContributions()));
+        myInfo.setFriendName(this.getFriendName());
+        myInfo.setCredit(this.getCredit());
+        myInfo.setFlagFriendReq(this.getFlagFriendReq());
+        myInfo.setAddNewItem(this.getAddNewItem());
+        myInfo.setRemoveItem(this.getRemoveItem());
         
+        return myInfo;
     }
+    
      public boolean getFlagFriendReq() {
         return  FlagFriendReq;
      }
@@ -226,6 +231,30 @@ class UserInfo {
 
     public void setCredit(int credit) {
         this.credit = credit;
+    }
+
+    public String getAddNewItem() {
+        return addNewItem;
+    }
+
+    public void setAddNewItem(String addNewItem) {
+        this.addNewItem = addNewItem;
+    }
+
+    public String getRemoveItem() {
+        return RemoveItem;
+    }
+
+    public void setRemoveItem(String RemoveItem) {
+        this.RemoveItem = RemoveItem;
+    }
+
+    public Vector <String> getCompletedContributions() {
+        return completedContributions;
+    }
+
+    public void setCompletedContributions(Vector <String> completedContributions) {
+        this.completedContributions = completedContributions;
     }
 }
 
