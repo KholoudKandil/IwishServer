@@ -65,6 +65,7 @@ class UserInfo {
     private Vector <String> pendFriends; // Pending friends of user
     private Vector <String> aprvFriends; //  a vector of user's friends
     private Vector <String> completedContributions;
+    private Vector <String> contributedFriends;
     private int credit; // user's credit or wallet
     private ProdInfo newProd;
     //private String addNewItem;
@@ -85,6 +86,7 @@ class UserInfo {
         myInfo.setFname(this.getFname());
         myInfo.setLname(this.getLname());
         myInfo.setEmail(this.getEmail());
+        myInfo.setPw(this.getPw());
         myInfo.setWishList(new Vector(this.getWishList()));
         myInfo.setAvailableProds(new Vector(this.getAvailableProds()));
         myInfo.setPendFriends(new Vector(this.getPendFriends()));
@@ -92,6 +94,7 @@ class UserInfo {
         myInfo.setAprvFriends(new Vector(this.getAprvFriends()));
         myInfo.setCompletedProds(new Vector(this.getCompletedProds()));
         myInfo.setCompletedContributions(new Vector(this.getCompletedContributions()));
+        myInfo.setContributedFriends(this.getContributedFriends());
         myInfo.setFriendName(this.getFriendName());
         myInfo.setCredit(this.getCredit());
         myInfo.setFlagFriendReq(this.getFlagFriendReq());
@@ -266,6 +269,14 @@ class UserInfo {
 
     public void setNewProd(ProdInfo newProd) {
         this.newProd = newProd;
+    }
+
+    public Vector <String> getContributedFriends() {
+        return contributedFriends;
+    }
+
+    public void setContributedFriends(Vector <String> contributedFriends) {
+        this.contributedFriends = contributedFriends;
     }
 }
 

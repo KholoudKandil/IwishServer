@@ -46,6 +46,7 @@ public class Server extends javax.swing.JFrame {
     static Connection con;
     static PreparedStatement pst;
     static ResultSet rs;
+    static ResultSet rs2;
 
     /**
      * Creates new form Server
@@ -54,6 +55,7 @@ public class Server extends javax.swing.JFrame {
         initComponents();
         btnStop.setEnabled(false);
         btnAddItem.setEnabled(false);
+        
     }
     
     // start server
@@ -108,7 +110,7 @@ public class Server extends javax.swing.JFrame {
                 usr.setResult("success");
             // set user details
             usr.setUsrName(rs.getString(2));
-            //usr.setPw(rs.getString(3));
+            usr.setPw(rs.getString(3));
             usr.setEmail(rs.getString(4));
             usr.setFname(rs.getString(5));
             usr.setLname(rs.getString(6));
@@ -118,7 +120,8 @@ public class Server extends javax.swing.JFrame {
             pst = con.prepareStatement("select item.* , w.total_paid \n" +
                                     "from item, wishlist w\n" +
                                     "where item.id = w.item_id\n" +
-                                    "    and w.usr_id = ?\n" , ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                                    "    and w.usr_id = ?\n "
+                    + "and completed = 0 \n" , ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             //rs.next();
             pst.setString(1, usr_id);
             
@@ -131,7 +134,9 @@ public class Server extends javax.swing.JFrame {
                 prod.setPrice(rs.getInt(3));
                 prod.setQty(rs.getInt(4));
                 prod.setDesc(rs.getString(5));
+                prod.setImg(rs.getString(6));
                 prod.setPaid(rs.getInt(7));
+                
                 prodWishList.add(prod);
             }
             //System.out.println(prodWishList);
@@ -151,7 +156,7 @@ public class Server extends javax.swing.JFrame {
                 prod.setPrice(rs.getInt(3));
                 prod.setQty(rs.getInt(4));
                 prod.setDesc(rs.getString(5));
-            
+                prod.setImg(rs.getString(6));
                 prodAvailableList.add(prod);
             }
             usr.setAvailableProds(prodAvailableList);
@@ -190,21 +195,45 @@ public class Server extends javax.swing.JFrame {
             usr.setPendFriends(PendFriend);
 
             // retrive notifications of completed gifts you wished for // fill completed list 
-            pst = con.prepareStatement("select * from item where id in(select item_id from wishlist where usr_id = ? and completed = 1)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
-            pst.setString(1, usr_id);           
-            rs = pst.executeQuery();
-            Vector <ProdInfo> completedProds = new Vector();
-            while(rs.next()){
-            ProdInfo prod= new ProdInfo();
-                
-                prod.setName(rs.getString(2));
-                prod.setPrice(rs.getInt(3));
-                prod.setQty(rs.getInt(4));
-                prod.setDesc(rs.getString(5));
-                
+            pst = con.prepareStatement("select *  from  item where id in(select item_id from wishlist where usr_id = ? and completed = 1)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                pst.setString(1, usr_id);
+                //pst.setString(2, usr_id);
+
+                rs = pst.executeQuery();
+                Vector<ProdInfo> completedProds = new Vector();
+                Vector<String> contributedfrieds = new Vector();
+
+                while (rs.next()) {
+
+                    ProdInfo prod = new ProdInfo();
+                    // UserInfo friends = new UserInfo();
+                    pst = con.prepareStatement(" select distinct us.usr_name   from usr us , item i , payment pt   "
+                            + "where I.ID = PT.ITEM_ID and  US.ID = PT.USR_ID and "
+                            + "friend_id =? and I.ID = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+
+                    pst.setString(2, rs.getString(1));
+                    pst.setString(1, usr_id);
+                    //contributedfrieds.add(rs.getString(1));
+                    rs2 = pst.executeQuery();
+                    prod.setName(rs.getString(2));
+                    prod.setPrice(rs.getInt(3));
+                    prod.setQty(rs.getInt(4));
+                    prod.setDesc(rs.getString(5));
+                    prod.setImg(rs.getString(6));
+
+                    completedProds.add(prod);
+                    
+                     while (rs2.next()) {
+                     contributedfrieds.add(rs2.getString(1));
+                     
+                     }
+                    
+                }
+                usr.setContributedFriends(contributedfrieds);
+                usr.setCompletedProds(completedProds);
+                System.out.println(99999);
+                System.out.println(usr.getContributedFriends());
             
-                completedProds.add(prod);
-            }
             // retrive notifications of completed gifts you contributed in // fill completed contributions list
             Vector completedContrbutions = new Vector();
             pst = con.prepareStatement("select usr.usr_name as friend_name , item.name as product_name\n" +
@@ -241,10 +270,12 @@ public class Server extends javax.swing.JFrame {
             else {
                 usr.setResult("fail");
             }
-            
+            rs.close();
+            pst.close();
         } catch (SQLException ex) {
             Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
         
         return usr;
     }
@@ -331,7 +362,7 @@ public class Server extends javax.swing.JFrame {
             if(rs.next())friend_id = rs.getString(1);
             
             pst = con.prepareStatement("DELETE FROM FRIEND \n" +
-                                        "WHERE USR_ID in (1,2) AND FRIEND_ID in (1,2)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                                        "WHERE USR_ID in (?,?) AND FRIEND_ID in (?,?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, usr_id);
             pst.setString(2, friend_id);
             pst.setString(3, usr_id);
@@ -710,14 +741,14 @@ public class Server extends javax.swing.JFrame {
             // insert data of excel file
             boolean inserted = true;
             for (Vector<String> row_vec : items_xlsx) {
-                if (row_vec.size() == 4) { // 5 for image path
-                    pst = con.prepareStatement("INSERT INTO item VALUES ( ? , ? , ? , ? , ? , null )", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                if (row_vec.size() == 5) { // 5 for image path
+                    pst = con.prepareStatement("INSERT INTO item VALUES ( ? , ? , ? , ? , ? , ? )", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
                     pst.setString(1, idStr);
                     pst.setString(2, row_vec.get(0));
                     pst.setString(3, row_vec.get(1));
                     pst.setString(4, row_vec.get(2));
                     pst.setString(5, row_vec.get(3));
-                    //pst.setString(6, row_vec.get(4)); // for image path
+                    pst.setString(6, row_vec.get(4)); // for image path
                     pst.executeUpdate();
                     idInt++;
                     idStr = String.valueOf(idInt);
@@ -976,20 +1007,23 @@ class ClientHandler extends Thread {
         while (true) {
                 try {
                 String msg = dis.readLine();
-                UserInfo data = new Gson().fromJson(msg, UserInfo.class);
-                data = handleMsg(msg);
-                // send msg back to all client
-                //if(thid = )
-                
-                long clientId = this.getId();
-                String msgbk = new Gson().toJson(data);
-                //System.out.println(msgbk);
-                
-                sendMessageToClient(msgbk, clientId);
-                
-                } catch (SocketException ex) {
+                System.out.println(msg);
+                if (msg != null) {
+                    UserInfo data = new Gson().fromJson(msg, UserInfo.class);
+                    data = handleMsg(msg);
+                    long clientId = this.getId();
+                    String msgbk = new Gson().toJson(data);
+                    sendMessageToClient(msgbk, clientId);
+                } else {
+                    dis.close();
+                    ps.close();
+                    cs.close();
+                    break;
+                }
+
+            } catch (SocketException ex) {
                 try {
-                dis.close();
+                    dis.close();
                 } catch (IOException ex1) {
                 Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex1);
                 }
