@@ -2,6 +2,8 @@ package server;
 
 
 import com.google.gson.Gson;
+import java.awt.Dimension;
+import java.awt.Toolkit;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -55,6 +57,12 @@ public class Server extends javax.swing.JFrame {
         initComponents();
         btnStop.setEnabled(false);
         btnAddItem.setEnabled(false);
+        this.setResizable(false);
+        this.setSize(400, 300);
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+        this.setLocation(dim.width/2-this.getSize().width/2, dim.height/2-this.getSize().height/2);
+
+
         
     }
     
@@ -706,7 +714,7 @@ public class Server extends javax.swing.JFrame {
             
         } catch (SQLException ex) {
             data.setResult("fail");
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         return data;
@@ -744,7 +752,7 @@ public class Server extends javax.swing.JFrame {
             
         } catch (SQLException ex) {
             data.setResult("fail");
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         return data;
@@ -770,8 +778,8 @@ public class Server extends javax.swing.JFrame {
             pst.close();
             
         } catch (SQLException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-//            data.setResult("fail");
+            //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+           data.setResult("fail");
         }
         return data; 
          
@@ -1052,7 +1060,7 @@ class ClientHandler extends Thread {
             //Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
         } 
         catch (IOException ex) {
-            Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -1080,13 +1088,13 @@ class ClientHandler extends Thread {
                 try {
                     dis.close();
                 } catch (IOException ex1) {
-                Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex1);
+                //Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex1);
                 }
                 ps.close();
                 clientsVector.remove(this);
                 stop();
                 } catch (IOException ex) {
-                Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
+                //Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
                 }
         }
     }
