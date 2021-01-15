@@ -115,7 +115,8 @@ public class Server extends javax.swing.JFrame {
             usr.setFname(rs.getString(5));
             usr.setLname(rs.getString(6));
             String usr_id = rs.getString(1);
-            
+            rs.close();
+            pst.close();
             // Select and set user's wishlist details
             pst = con.prepareStatement("select item.* , w.total_paid \n" +
                                     "from item, wishlist w\n" +
@@ -143,6 +144,8 @@ public class Server extends javax.swing.JFrame {
             usr.setWishList(prodWishList);
             //System.out.println(usr.getWishList());
             //System.out.println("I added products to my wish list");
+            rs.close();
+            pst.close();
             
             //Select and set available products
             pst = con.prepareStatement("SELECT * FROM item", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
@@ -160,6 +163,8 @@ public class Server extends javax.swing.JFrame {
                 prodAvailableList.add(prod);
             }
             usr.setAvailableProds(prodAvailableList);
+            rs.close();
+            pst.close();
             
             // Select and set user's friend list
             pst = con.prepareStatement("SELECT usr_name FROM usr where usr.id in (Select friend_id from friend where usr_id = ? and friend_status = 0) or usr.id in (Select usr_id from friend where friend_id = ? and friend_status = 0)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
@@ -172,9 +177,10 @@ public class Server extends javax.swing.JFrame {
                 friendList.add(rs.getString(1));
             }
             usr.setAprvFriends(friendList);
+            rs.close();
+            pst.close();
             
             // Select and set friend requests
-
             pst = con.prepareStatement("SELECT US.USR_NAME\n"
             + "FROM USR US \n"
             + "WHERE US.ID IN\n"
@@ -193,65 +199,80 @@ public class Server extends javax.swing.JFrame {
 
             }
             usr.setPendFriends(PendFriend);
-
+            rs.close();
+            pst.close();
+            
             // retrive notifications of completed gifts you wished for // fill completed list 
             pst = con.prepareStatement("select *  from  item where id in(select item_id from wishlist where usr_id = ? and completed = 1)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
                 pst.setString(1, usr_id);
-                //pst.setString(2, usr_id);
-
                 rs = pst.executeQuery();
                 Vector<ProdInfo> completedProds = new Vector();
                 Vector<String> contributedfrieds = new Vector();
-
+                ProdInfo prod = new ProdInfo();
                 while (rs.next()) {
 
-                    ProdInfo prod = new ProdInfo();
-                    // UserInfo friends = new UserInfo();
-                    pst = con.prepareStatement(" select distinct us.usr_name   from usr us , item i , payment pt   "
-                            + "where I.ID = PT.ITEM_ID and  US.ID = PT.USR_ID and "
-                            + "friend_id =? and I.ID = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
-
-                    pst.setString(2, rs.getString(1));
-                    pst.setString(1, usr_id);
-                    //contributedfrieds.add(rs.getString(1));
-                    rs2 = pst.executeQuery();
+                    
                     prod.setName(rs.getString(2));
                     prod.setPrice(rs.getInt(3));
                     prod.setQty(rs.getInt(4));
                     prod.setDesc(rs.getString(5));
                     prod.setImg(rs.getString(6));
-
+                    pst = con.prepareStatement(" select distinct us.usr_name   from usr us , item i , payment pt   "
+                            + "where I.ID = PT.ITEM_ID and  US.ID = PT.USR_ID and "
+                            + "friend_id =? and I.ID = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                    pst.setString(2, rs.getString(1));
+                    pst.setString(1, usr_id);
+                    
+                    rs2 = pst.executeQuery();
                     completedProds.add(prod);
                     
                      while (rs2.next()) {
-                     contributedfrieds.add(rs2.getString(1));
-                     
+                            contributedfrieds.add(rs2.getString(1));
                      }
+                     prod.setContributedFriends(contributedfrieds);
                     
                 }
-                usr.setContributedFriends(contributedfrieds);
+                
                 usr.setCompletedProds(completedProds);
-                System.out.println(99999);
-                System.out.println(usr.getContributedFriends());
-            
+                
+            rs.close();
+            pst.close();
             // retrive notifications of completed gifts you contributed in // fill completed contributions list
-            Vector completedContrbutions = new Vector();
-            pst = con.prepareStatement("select usr.usr_name as friend_name , item.name as product_name\n" +
-                                        "from wishlist w, payment p, usr, item\n" +
-                                        "where w.usr_id = p.friend_id \n" +
-                                        "    and w.item_id = P.ITEM_ID \n" +
-                                        "    and completed = 1 \n" +
-                                        "    and p.usr_id =? \n" +
-                                        "    and usr.id = p.friend_id\n" +
-                                        "    and item.id = w.item_id", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
-            pst.setString(1, usr_id);           
+            pst = con.prepareStatement("select usr_id, item_id\n" +
+                                        "from wishlist\n" +
+                                        "where completed =1", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                       
             rs = pst.executeQuery();
+            Vector <ContrDetails> contrList = new Vector();
             while(rs.next()){
-            usr.setFriendName(rs.getString(1));
-            completedContrbutions.add(rs.getString(2));
+                    pst = con.prepareStatement("select distinct p.usr_id, usr.usr_name as friend_name , item.name as product_name\n" +
+                                                "from payment p, item, usr\n" +
+                                                "where usr.id = p.FRIEND_ID\n" +
+                                                "       and item.id = p.ITEM_ID\n" +
+                                                "        and p.friend_id = ?\n" +
+                                                "        and p.item_id =?\n" +
+                                                "        and p.usr_id = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                       
+                    pst.setString(1, rs.getString(1));
+                    pst.setString(2, rs.getString(2));
+                    pst.setString(3, usr_id);
+                    rs2 = pst.executeQuery();
+                    
+                    while(rs2.next()){
+                    ContrDetails contr = new ContrDetails();
+                    contr.setFriendName(rs2.getString(2));
+                    contr.setProdName(rs2.getString(3));
+                    contrList.add(contr);
+                    System.out.println("Contribution Details contr "+ contr.getFriendName()+" "+contr.getProdName());
+                    
+                    }
+                    
+                    
+                    
             }
-            usr.setCompletedProds(completedProds);
-            usr.setCompletedContributions(completedContrbutions);
+            usr.setCompletedContributions(contrList);
+            rs.close();
+            pst.close();
             
             // Retriving user credit 
             pst = con.prepareStatement("SELECT CREDIT FROM usr where usr.id  = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
@@ -262,16 +283,17 @@ public class Server extends javax.swing.JFrame {
 
                     // contribute.setCredit(rs.getInt(1));
                     usr.setCredit(rs.getInt(1));
-
+            
                 }
+                        rs.close();
+            pst.close();
             
             }
             
             else {
                 usr.setResult("fail");
             }
-            rs.close();
-            pst.close();
+            
         } catch (SQLException ex) {
             Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -292,6 +314,8 @@ public class Server extends javax.swing.JFrame {
                 temp++;
                 id = String.valueOf(temp);
             }
+            rs.close();
+            pst.close();
             // insert
             pst = con.prepareStatement("INSERT INTO usr VALUES ( ? , ? , ? , ? , ? , ?,0,'' )", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, id);   pst.setString(2, data.getUsrName());
@@ -301,6 +325,8 @@ public class Server extends javax.swing.JFrame {
             con.commit();
             //System.out.println("Row inserted");
             data.setResult("success");
+            rs.close();
+            pst.close();
         } catch (SQLException ex) {
             //data.setResult("fail");
             
@@ -316,16 +342,19 @@ public class Server extends javax.swing.JFrame {
     }
 
        static UserInfo fWishMsg(UserInfo usr){
+           String usr_id=null;
         String usrName = usr.getUsrName();
             Vector <ProdInfo> prodList = new Vector();
         try {
             pst = con.prepareStatement("SELECT id FROM usr WHERE usr_name = ? ", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, usrName);
             rs = pst.executeQuery();
+            if(rs.next()){usr_id = rs.getString(1);}
+            rs.close();
+            pst.close();
             
             pst = con.prepareStatement("SELECT item.* FROM wishlist, item WHERE usr_id = ? and item.id = wishlist.item_id and completed = 0", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
-            rs.next();
-            pst.setString(1, rs.getString(1));
+            pst.setString(1, usr_id);
             
             rs = pst.executeQuery();
             while(rs.next()){
@@ -339,6 +368,8 @@ public class Server extends javax.swing.JFrame {
                 prodList.add(prod);
             }
             usr.setWishList(prodList);
+            rs.close();
+            pst.close();
             
         } catch (SQLException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
@@ -355,11 +386,15 @@ public class Server extends javax.swing.JFrame {
             rs = pst.executeQuery();
             if(rs.next())
             usr_id = rs.getString(1);
+            rs.close();
+            pst.close();
             
             pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, data.getUsrName());
             rs = pst.executeQuery();
             if(rs.next())friend_id = rs.getString(1);
+            rs.close();
+            pst.close();
             
             pst = con.prepareStatement("DELETE FROM FRIEND \n" +
                                         "WHERE USR_ID in (?,?) AND FRIEND_ID in (?,?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
@@ -375,7 +410,8 @@ public class Server extends javax.swing.JFrame {
             con.commit();
             //System.out.println("Row deleted");
             //System.out.println(data.getAprvFriends());
-            
+            rs.close();
+            pst.close();
         } catch (SQLException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -390,13 +426,15 @@ public class Server extends javax.swing.JFrame {
             rs = pst.executeQuery();
             if(rs.next()){
             usr_id = rs.getString(1);}
-            
+            rs.close();
+            pst.close();
             
             pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, data.getUsrName());
             rs = pst.executeQuery();
             if(rs.next()){friend_id = rs.getString(1);}
-            
+            rs.close();
+            pst.close();
             pst = con.prepareStatement("insert into friend values (?,?,?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, usr_id);
             pst.setString(2, friend_id);
@@ -406,7 +444,8 @@ public class Server extends javax.swing.JFrame {
             
             
             data.setResult("success");
-            
+            rs.close();
+            pst.close();
             
         } catch (SQLException ex) {
             data.setResult(Integer.toString(ex.getErrorCode()));
@@ -439,6 +478,7 @@ public class Server extends javax.swing.JFrame {
                     pst.setString(2, data.getFriendName());
                      pst.executeUpdate();
                      con.commit();
+                     
                     // Select and set user's friend list
                     pst = con.prepareStatement("select usr.usr_name \n" +
                                                                 "from usr\n" +
@@ -467,7 +507,8 @@ public class Server extends javax.swing.JFrame {
                         friendList.add(rs.getString(1));
                     }
                     data.setAprvFriends(friendList);
-
+                    rs.close();
+            pst.close();
             // Select and set friend requests
             
             pst = con.prepareStatement("SELECT US.USR_NAME\n"
@@ -529,6 +570,8 @@ public class Server extends javax.swing.JFrame {
             data.setPendFriends(PendFriend);
             
                }
+               rs.close();
+            pst.close();
             data.setResult("success");
             
             
@@ -554,7 +597,8 @@ public class Server extends javax.swing.JFrame {
                 id = String.valueOf(temp);
             }
             
-            
+            rs.close();
+            pst.close();
             
             pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, data.getUsrName());
@@ -563,18 +607,24 @@ public class Server extends javax.swing.JFrame {
             if (rs.next()) {
                 usr_id = rs.getString(1);
             }
+            rs.close();
+            pst.close();
                 pst = con.prepareStatement("select id from usr where usr_name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
                 pst.setString(1, data.getContribution().getFriendName());
                 rs = pst.executeQuery();
                 if (rs.next()) {
                     friend_id = rs.getString(1);
                 }
+                rs.close();
+            pst.close();
                 pst = con.prepareStatement("select id from ITEM where name = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
                 pst.setString(1, data.getContribution().getProdName());
                 rs = pst.executeQuery();
                 if (rs.next()) {
                     item_id = rs.getString(1);
                 }
+                rs.close();
+            pst.close();
                 pst = con.prepareStatement("insert into PAYMENT (ID,USR_ID,FRIEND_ID,ITEM_ID,PAID) VALUES (?,?,?,?,?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
                 pst.setString(1, id);
                 pst.setString(2, usr_id);
@@ -597,7 +647,8 @@ public class Server extends javax.swing.JFrame {
                      data.setContribution(actualamount);
                 }
                 
-               
+               rs.close();
+            pst.close();
                 pst = con.prepareStatement("select credit from usr where id = ? ", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
                pst.setString(1, usr_id);
                  
@@ -608,7 +659,8 @@ public class Server extends javax.swing.JFrame {
                     
                      data.setCredit(rs.getInt(1));
                 }
-
+                rs.close();
+            pst.close();
                 data.setResult("success");
         
             
@@ -629,12 +681,15 @@ public class Server extends javax.swing.JFrame {
             rs = pst.executeQuery();
             if(rs.next()){
             usr_id = rs.getString(1);
-            
+            rs.close();
+            pst.close();
             
             pst = con.prepareStatement("SELECT ID FROM ITEM WHERE NAME= ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, data.getNewProd().getName());
             rs = pst.executeQuery();
             if(rs.next())AddNewItem = rs.getString(1);
+            rs.close();
+            pst.close();
             
             pst = con.prepareStatement("insert into WISHLIST values (?,?,?,?)", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, usr_id);
@@ -651,7 +706,7 @@ public class Server extends javax.swing.JFrame {
             
         } catch (SQLException ex) {
             data.setResult("fail");
-            //Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         return data;
@@ -667,13 +722,16 @@ public class Server extends javax.swing.JFrame {
             if(rs.next()){
             usr_id = rs.getString(1);
                 System.out.println("user id =  " + usr_id);
+            rs.close();
+            pst.close();
             
             pst = con.prepareStatement("SELECT ID FROM ITEM WHERE NAME= ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, data.getRemoveItem());
             rs = pst.executeQuery();
             if(rs.next())removeItem = rs.getString(1);
             System.out.println("item id =  " + removeItem);
-            
+            rs.close();
+            pst.close();
             pst = con.prepareStatement("DELETE FROM WISHLIST WHERE USR_ID=? AND ITEM_ID=?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             pst.setString(1, usr_id);
             pst.setString(2, removeItem);
@@ -708,16 +766,8 @@ public class Server extends javax.swing.JFrame {
                               System.out.println(data.getCredit());
                data.setResult("success");
               
-//            pst = con.prepareStatement("select credit from usr where usr_name = ? ", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
-//            pst.setString(1, data.getUsrName());
-//            
-//            rs = pst.executeQuery();
-//            
-//            if (rs.next()) {
-//                
-//                
-//                data.setCredit(rs.getInt(1));
-//                
+               rs.close();
+            pst.close();
             
         } catch (SQLException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
@@ -738,8 +788,11 @@ public class Server extends javax.swing.JFrame {
                 idInt++;
                 idStr = String.valueOf(idInt);
             }
+            rs.close();
+            pst.close();
             // insert data of excel file
             boolean inserted = true;
+            
             for (Vector<String> row_vec : items_xlsx) {
                 if (row_vec.size() == 5) { // 5 for image path
                     pst = con.prepareStatement("INSERT INTO item VALUES ( ? , ? , ? , ? , ? , ? )", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
@@ -752,6 +805,8 @@ public class Server extends javax.swing.JFrame {
                     pst.executeUpdate();
                     idInt++;
                     idStr = String.valueOf(idInt);
+                    rs.close();
+            pst.close();
                 }
                 else {
                     JOptionPane.showMessageDialog(this, "Your file does not match the system");

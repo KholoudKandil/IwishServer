@@ -64,8 +64,8 @@ class UserInfo {
     private String friendName; // The name of the friend that user wants to add or remove
     private Vector <String> pendFriends; // Pending friends of user
     private Vector <String> aprvFriends; //  a vector of user's friends
-    private Vector <String> completedContributions;
-    private Vector <String> contributedFriends;
+    private Vector <ContrDetails> completedContributions;
+    
     private int credit; // user's credit or wallet
     private ProdInfo newProd;
     //private String addNewItem;
@@ -94,7 +94,6 @@ class UserInfo {
         myInfo.setAprvFriends(new Vector(this.getAprvFriends()));
         myInfo.setCompletedProds(new Vector(this.getCompletedProds()));
         myInfo.setCompletedContributions(new Vector(this.getCompletedContributions()));
-        myInfo.setContributedFriends(this.getContributedFriends());
         myInfo.setFriendName(this.getFriendName());
         myInfo.setCredit(this.getCredit());
         myInfo.setFlagFriendReq(this.getFlagFriendReq());
@@ -238,15 +237,7 @@ class UserInfo {
     public void setCredit(int credit) {
         this.credit = credit;
     }
-/*
-    public String getAddNewItem() {
-        return addNewItem;
-    }
 
-    public void setAddNewItem(String addNewItem) {
-        this.addNewItem = addNewItem;
-    }
-*/
     public String getRemoveItem() {
         return RemoveItem;
     }
@@ -255,11 +246,11 @@ class UserInfo {
         this.RemoveItem = RemoveItem;
     }
 
-    public Vector <String> getCompletedContributions() {
+    public Vector <ContrDetails> getCompletedContributions() {
         return completedContributions;
     }
 
-    public void setCompletedContributions(Vector <String> completedContributions) {
+    public void setCompletedContributions(Vector <ContrDetails> completedContributions) {
         this.completedContributions = completedContributions;
     }
 
@@ -271,13 +262,7 @@ class UserInfo {
         this.newProd = newProd;
     }
 
-    public Vector <String> getContributedFriends() {
-        return contributedFriends;
-    }
-
-    public void setContributedFriends(Vector <String> contributedFriends) {
-        this.contributedFriends = contributedFriends;
-    }
+    
 }
 
 
@@ -288,6 +273,7 @@ class ProdInfo {
     private String result; // welcome back - wrong user name or pw
     private String name,desc, img;
     private int price, qty, paid;
+    private Vector <String> contributedFriends;
 
     public String getName() {
         return name;
@@ -359,6 +345,14 @@ class ProdInfo {
 
     public void setResult(String result) {
         this.result = result;
+    }
+
+    public Vector <String> getContributedFriends() {
+        return contributedFriends;
+    }
+
+    public void setContributedFriends(Vector <String> contributedFriends) {
+        this.contributedFriends = contributedFriends;
     }
 }
 /*
